@@ -98,7 +98,7 @@ public class LangManager extends LangCore {
         }
 
         if (loadedLang.get(key) == null) {
-            sender.sendMessage(get("_redprotect.prefix") + " " + ChatColor.translateAlternateColorCodes('&', key));
+            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', key));
         } else if (get(key).isEmpty()) {
             return;
         } else {
@@ -106,7 +106,7 @@ public class LangManager extends LangCore {
             for (Replacer replacer : replaces) {
                 message = message.replace(replacer.placeholder(), replacer.value());
             }
-            sender.sendMessage(get("_redprotect.prefix") + " " + message);
+            sender.sendMessage(message);
         }
 
         if (sender instanceof final Player p) {

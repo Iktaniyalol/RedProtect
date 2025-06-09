@@ -8,8 +8,8 @@ softdepend: [ Slimefun, TranslationAPI, InfernalMobs, WorldEdit, WorldGuard, Bos
 commands:
   RedProtect:
     description: "Main command for RedProtect."
-    usage: "Error, use '/rp ?' to see the commands."
-    aliases: [ rp ]
+    usage: "Error, use '/rg ?' to see the commands."
+    aliases: [ rg, regionguard ]
 permissions:
   redprotect.*:
     description: "All redprotect commands."

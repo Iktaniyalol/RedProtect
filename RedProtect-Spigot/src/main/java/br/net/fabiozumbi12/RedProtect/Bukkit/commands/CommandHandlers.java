@@ -1200,7 +1200,7 @@ public class CommandHandlers {
     }
 
     public static void HandleHelpPage(CommandSender sender, int page) {
-        sender.sendMessage(RedProtect.get().getLanguageManager().get("_redprotect.prefix") + " " + RedProtect.get().getLanguageManager().get("cmdmanager.available.cmds"));
+        sender.sendMessage(RedProtect.get().getLanguageManager().get("cmdmanager.available.cmds"));
         sender.sendMessage(RedProtect.get().getLanguageManager().get("general.color") + "------------------------------------");
         sender.sendMessage(RedProtect.get().getLanguageManager().get("cmdmanager.helpheader.alias"));
 
