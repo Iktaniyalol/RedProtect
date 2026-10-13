@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012-2025 - @FabioZumbi12
- * Last Modified: 02/07/2025 09:45
+ * Last Modified: 01/12/2025 22:36
  *
  * This class is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any
  *  damages arising from the use of this class.
@@ -45,6 +45,7 @@ import me.NoChance.PvPManager.PvPlayer;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.type.Lectern;
 import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -96,13 +97,24 @@ public class PlayerListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onCraftItem(PrepareItemCraftEvent e) {
-        if (e.getView().getPlayer() instanceof Player p) {
+        try {
+            // Avoid error "IncompatibleClassChangeError: Found class org.bukkit.inventory.InventoryView, but interface was expected"
+            Object view = e.getClass()
+                    .getMethod("getView")
+                    .invoke(e);
+            Object playerObj = view.getClass()
+                    .getMethod("getPlayer")
+                    .invoke(view);
 
-            ItemStack result = e.getInventory().getResult();
+            if (playerObj instanceof Player p) {
+                ItemStack result = e.getInventory().getResult();
 
-            if (RedProtect.get().getUtil().denyPotion(result, p)) {
-                e.getInventory().setResult(new ItemStack(Material.AIR));
+                if (RedProtect.get().getUtil().denyPotion(result, p)) {
+                    e.getInventory().setResult(new ItemStack(Material.AIR));
+                }
             }
+        } catch (Exception ex) {
+            // Avoid IncompatibleClassChangeError: Found class org.bukkit.inventory.InventoryView, but interface was expected
         }
     }
 
@@ -332,6 +344,12 @@ public class PlayerListener implements Listener {
                             RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantuse");
                             event.setCancelled(true);
                         }
+                    } else if (b.getType().name().contains("LECTERN")) {
+                        // Reading is always allowed; adding a book to an empty lectern needs build permission
+                        if (b.getBlockData() instanceof Lectern lectern && !lectern.hasBook() && !r.canBuild(p)) {
+                            RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantinteract");
+                            event.setCancelled(true);
+                        }
                     } else if (b.getState() instanceof InventoryHolder ||
                             RedProtect.get().getConfigManager().configRoot().private_cat.allowed_blocks.stream().anyMatch(b.getType().name()::matches)) {
                         var open = cont.canOpen(b, p, true);
@@ -351,7 +369,6 @@ public class PlayerListener implements Listener {
                             RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantlever");
                             event.setCancelled(true);
                         }
-                    } else if (b.getType().name().contains("LECTERN")) { // Do nothing to allow read books
                     } else if (b.getType().name().contains("BUTTON")) {
                         if (!r.canButton(p)) {
                             RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantbutton");
@@ -1340,7 +1357,7 @@ public class PlayerListener implements Listener {
         if (RedProtect.get().getConfigManager().configRoot().notify.welcome_mode.equalsIgnoreCase("BOSSBAR")) {
             Compat111.sendBarMsg(wel, "GREEN", p);
         }
-        if (RedProtect.get().getConfigManager().configRoot().notify.region_enter_mode.equalsIgnoreCase("ACTIONBAR")) {
+        if (RedProtect.get().getConfigManager().configRoot().notify.welcome_mode.equalsIgnoreCase("ACTIONBAR")) {
             try {
                 Class.forName("net.md_5.bungee.api.chat.BaseComponent");
                 SpigotHelper.sendSpigotActionBar(p, wel);

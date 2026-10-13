@@ -1,6 +1,6 @@
 <!--
-  ~ Copyright (c) 2012-2025 - @FabioZumbi12
-  ~ Last Modified: 15/07/2025 18:10
+  ~ Copyright (c) 2012-2026 - @FabioZumbi12
+  ~ Last Modified: 03/02/2026 21:47
   ~
   ~ This class is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any
   ~  damages arising from the use of this class.
@@ -36,6 +36,10 @@
     <artifactId>RedProtect-Spigot</artifactId>
 
     <repositories>
+        <repository>
+            <id>maven-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        </repository>
         <repository>
             <id>sk89q-snapshots</id>
             <url>https://maven.enginehub.org/repo/</url>
@@ -97,14 +101,14 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.1-R0.1-SNAPSHOT</version>
+            <version>1.21.10-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.1-R0.1-SNAPSHOT</version>
+            <version>1.21.10-R0.1-SNAPSHOT</version>
             <classifier>javadoc</classifier>
         </dependency>
 
@@ -152,11 +156,10 @@
             <systemPath>${project.basedir}/libs/ActionBarAPI-1.5.4.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>dynmap-3</groupId>
-            <artifactId>dynmap-3</artifactId>
-            <version>v1</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/libs/Dynmap-3.5-beta-3-spigot.jar</systemPath>
+            <groupId>us.dynmap</groupId>
+            <artifactId>dynmap-api</artifactId>
+            <version>3.5</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>GriefPrevention</groupId>
@@ -301,7 +304,7 @@
         <dependency>
             <groupId>io.github.fabiozumbi12.UltimateChat</groupId>
             <artifactId>UltimateFancy</artifactId>
-            <version>1.9.3-SNAPSHOT</version>
+            <version>1.9.3</version>
         </dependency>
     </dependencies>
 
@@ -341,7 +344,7 @@
                                 </filter>
                             </filters>
                             <outputFile>
-                                ${project.basedir}/target/RedProtect-${project.version}-b${BUILD_NUMBER}-Spigot.jar
+                                ${project.basedir}/target/RedProtect-${project.version}.jar
                             </outputFile>
                         </configuration>
                     </execution>

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012-2025 - @FabioZumbi12
- * Last Modified: 18/01/2025 15:59
+ * Last Modified: 10/10/2025 14:04
  *
  * This class is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any
  *  damages arising from the use of this class.
@@ -28,9 +28,6 @@ package br.net.fabiozumbi12.RedProtect.Bukkit.helpers;
 
 import br.net.fabiozumbi12.RedProtect.Bukkit.RedProtect;
 import br.net.fabiozumbi12.RedProtect.Bukkit.Region;
-import br.net.fabiozumbi12.RedProtect.Bukkit.ents.RPBukkitBlocks;
-import br.net.fabiozumbi12.RedProtect.Bukkit.ents.RPBukkitEntities;
-import br.net.fabiozumbi12.RedProtect.Bukkit.ents.TaskChain;
 import br.net.fabiozumbi12.RedProtect.Bukkit.hooks.WEHook;
 import br.net.fabiozumbi12.RedProtect.Core.helpers.CoreUtil;
 import br.net.fabiozumbi12.RedProtect.Core.helpers.LogLevel;
@@ -226,30 +223,28 @@ public class RedProtectUtil extends CoreUtil {
     }
 
     public void performCommand(final ConsoleCommandSender consoleCommandSender, final String command) {
-        TaskChain.newChain().add(new TaskChain.GenericTask() {
-            public void run() {
-                RedProtect.get().getServer().dispatchCommand(consoleCommandSender, command);
-            }
-        }).execute();
+        if (Bukkit.isPrimaryThread()) {
+            Bukkit.dispatchCommand(consoleCommandSender, command);
+        } else {
+            Bukkit.getScheduler().runTask(RedProtect.get(), () -> Bukkit.dispatchCommand(consoleCommandSender, command));
+        }
     }
 
     public boolean isBukkitBlock(Block b) {
-        //check if is bukkit 1.8.8 blocks
+        if (b == null) return false;
         try {
-            RPBukkitBlocks.valueOf(b.getType().name());
+            return b.getType().getKey().getNamespace().equalsIgnoreCase("minecraft");
+        } catch (Throwable t) {
             return true;
-        } catch (Exception e) {
-            return false;
         }
     }
 
     public boolean isBukkitEntity(Entity e) {
-        //check if is bukkit 1.8.8 Entity
+        if (e == null) return false;
         try {
-            RPBukkitEntities.valueOf(e.getType().name());
+            return e.getType().getKey().getNamespace().equalsIgnoreCase("minecraft");
+        } catch (Throwable ex) {
             return true;
-        } catch (Exception ex) {
-            return false;
         }
     }
 
@@ -289,7 +284,6 @@ public class RedProtectUtil extends CoreUtil {
         return genFileName(Path, isBackup, RedProtect.get().getConfigManager().configRoot().flat_file.max_backups, dateNow());
     }
 
-    //TODO read all db
     public void ReadAllDB(Set<Region> regions) {
         int purged = 0;
         int sell = 0;
@@ -1148,39 +1142,9 @@ public class RedProtectUtil extends CoreUtil {
         return rname;
     }
 
-    public ItemStack createSkullOld(String texture) {
-        Material mat = Material.getMaterial("PLAYER_HEAD");
-        ItemStack s;
-        if (mat != null) {
-            s = new ItemStack(mat);
-        } else {
-            s = new ItemStack(Material.getMaterial("SKULL_ITEM"), 1, (short) 3);
-        }
-
-        SkullMeta meta = (SkullMeta) s.getItemMeta();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "");
-        profile.getProperties().put("textures", new Property("textures", texture));
-        Field profileField;
-        try {
-            profileField = meta.getClass().getDeclaredField("profile");
-            profileField.setAccessible(true);
-            profileField.set(meta, profile);
-        } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-            Bukkit.getLogger().warning("Failed to set base64 skull value!");
-        }
-        s.setItemMeta(meta);
-        return s;
-    }
-
     /* Skull texture example by https://github.com/RRS-9747/HeadDrop */
     public ItemStack createSkull(String texture) {
-        Material mat = Material.getMaterial("PLAYER_HEAD");
-        ItemStack s;
-        if (mat != null) {
-            s = new ItemStack(mat);
-        } else {
-            s = new ItemStack(Material.getMaterial("SKULL_ITEM"), 1, (short) 3);
-        }
+        ItemStack s = new ItemStack(Material.PLAYER_HEAD);
 
         try {
             // Only for paper servers
@@ -1191,12 +1155,12 @@ public class RedProtectUtil extends CoreUtil {
 
                 skullMeta.setPlayerProfile(playerProfile);
             });
-        } catch (Exception ex){
+        } catch (Exception ex) {
             // If not paper
-                SkullMeta sm = (SkullMeta) s.getItemMeta();
-                mutateItemMeta(sm, texture);
-                s.setItemMeta(sm);
-            }
+            SkullMeta sm = (SkullMeta) s.getItemMeta();
+            mutateItemMeta(sm, texture);
+            s.setItemMeta(sm);
+        }
         return s;
     }
 
