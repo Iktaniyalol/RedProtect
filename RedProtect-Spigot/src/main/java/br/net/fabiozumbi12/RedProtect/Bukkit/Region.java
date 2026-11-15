@@ -999,6 +999,11 @@ public class Region extends CoreRegion {
     }
 
     public boolean canBuild(Player p) {
+        // External protection hooks (Clans war build on enemy base).
+        Boolean hook = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanBuild(p, this);
+        if (hook != null) {
+            return hook;
+        }
         return (getFlagBool("build") || checkAllowedPlayer(p, "build"));
     }
 
@@ -1066,6 +1071,11 @@ public class Region extends CoreRegion {
     }
 
     public boolean canPVP(Player attacker, Player defender) {
+        // External protection hooks (Clans war PvP).
+        Boolean hook = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanPvp(attacker, defender, this);
+        if (hook != null) {
+            return hook;
+        }
         if (defender != null && RedProtect.get().hooks.checkSC() && SimpleClansHook.inWar(this, attacker, defender)) {
             return true;
         }

@@ -33,12 +33,89 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class RedProtectAPI {
+
+    // ── External protection hooks ─────────────────────────────
+
+    private static final List<ProtectionHook> PROTECTION_HOOKS = new CopyOnWriteArrayList<>();
+
+    /**
+     * Register an external {@link ProtectionHook}. Hooks are consulted in
+     * registration order; the first non-null answer wins.
+     *
+     * @param hook the hook to register.
+     */
+    public static void registerProtectionHook(ProtectionHook hook) {
+        if (hook != null && !PROTECTION_HOOKS.contains(hook)) {
+            PROTECTION_HOOKS.add(hook);
+        }
+    }
+
+    /**
+     * Unregister a previously registered {@link ProtectionHook}.
+     *
+     * @param hook the hook to remove.
+     */
+    public static void unregisterProtectionHook(ProtectionHook hook) {
+        PROTECTION_HOOKS.remove(hook);
+    }
+
+    /**
+     * Aggregate {@code canBuild} across hooks. First non-null answer wins.
+     *
+     * @return {@code TRUE}/{@code FALSE} override or {@code null} for default.
+     */
+    public static Boolean hookCanBuild(Player p, Region r) {
+        for (ProtectionHook h : PROTECTION_HOOKS) {
+            Boolean res = h.canBuild(p, r);
+            if (res != null) return res;
+        }
+        return null;
+    }
+
+    /**
+     * Aggregate {@code canPvp} across hooks. First non-null answer wins.
+     *
+     * @return {@code TRUE}/{@code FALSE} override or {@code null} for default.
+     */
+    public static Boolean hookCanPvp(Player attacker, Player victim, Region r) {
+        for (ProtectionHook h : PROTECTION_HOOKS) {
+            Boolean res = h.canPvp(attacker, victim, r);
+            if (res != null) return res;
+        }
+        return null;
+    }
+
+    /**
+     * Aggregate {@code allowExplosion} across hooks. First non-null answer wins.
+     *
+     * @return {@code TRUE}/{@code FALSE} override or {@code null} for default.
+     */
+    public static Boolean hookAllowExplosion(Entity source, Region r) {
+        for (ProtectionHook h : PROTECTION_HOOKS) {
+            Boolean res = h.allowExplosion(source, r);
+            if (res != null) return res;
+        }
+        return null;
+    }
+
+    /**
+     * Whether any hook reports this region as locked from player commands.
+     */
+    public static boolean hookIsLocked(Region r) {
+        for (ProtectionHook h : PROTECTION_HOOKS) {
+            if (h.isLocked(r)) return true;
+        }
+        return false;
+    }
 
     /**
      * Return language api to send messages using RedProtect language;

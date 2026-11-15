@@ -485,6 +485,16 @@ public class BlockListener implements Listener {
             RedProtect.get().logger.debug(LogLevel.BLOCKS, "Blocks: " + b.getType().name());
             Location l = b.getLocation();
             Region r = RedProtect.get().getRegionManager().getTopRegion(l);
+            // External protection hooks (Clans war explosions).
+            if (r != null) {
+                Boolean hook = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookAllowExplosion(e.getEntity(), r);
+                if (hook != null) {
+                    if (!hook) {
+                        toRemove.add(b);
+                    }
+                    continue;
+                }
+            }
             if (r != null && !r.canFire() || !cont.canWorldBreak(b)) {
                 RedProtect.get().logger.debug(LogLevel.BLOCKS, "canWorldBreak Called!");
                 //e.setCancelled(true);

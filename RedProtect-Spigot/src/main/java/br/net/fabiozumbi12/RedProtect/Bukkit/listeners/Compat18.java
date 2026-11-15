@@ -199,6 +199,16 @@ public class Compat18 implements Listener {
         List<Block> toRemove = new ArrayList<>();
         for (Block b : e.blockList()) {
             Region r = RedProtect.get().getRegionManager().getTopRegion(b.getLocation());
+            // External protection hooks (Clans war explosions). BlockExplodeEvent has no entity source.
+            if (r != null) {
+                Boolean hook = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookAllowExplosion(null, r);
+                if (hook != null) {
+                    if (!hook) {
+                        toRemove.add(b);
+                    }
+                    continue;
+                }
+            }
             if (!cont.canWorldBreak(b)) {
                 toRemove.add(b);
                 continue;

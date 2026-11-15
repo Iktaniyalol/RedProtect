@@ -47,6 +47,21 @@ import java.util.stream.Collectors;
 
 public class CommandHandlers {
 
+    /**
+     * Regions locked by an external {@link br.net.fabiozumbi12.RedProtect.Bukkit.API.ProtectionHook}
+     * (e.g. Clans bases) refuse all player {@code /rg} management commands.
+     *
+     * @return {@code true} if the command must be aborted.
+     */
+    private static boolean lockedAbort(CommandSender src, Region r) {
+        if (r != null && br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookIsLocked(r)
+                && !src.hasPermission("redprotect.admin")) {
+            RedProtect.get().getLanguageManager().sendMessage(src, "cmdmanager.region.locked");
+            return true;
+        }
+        return false;
+    }
+
     public static void handleAddLeader(CommandSender src, String sVictim, Region r) {
         if (src instanceof Player p) {
             r = RedProtect.get().getRegionManager().getTopRegion(p.getLocation());
@@ -57,6 +72,7 @@ public class CommandHandlers {
         }
 
         if (RedProtect.get().getPermissionHandler().hasRegionPermLeader(src, "addleader", r)) {
+            if (lockedAbort(src, r)) return;
             final Player pVictim = RedProtect.get().getServer().getPlayer(sVictim);
 
             if ((pVictim == null || !pVictim.isOnline()) && !src.hasPermission("redprotect.command.admin.addleader")) {
@@ -133,6 +149,7 @@ public class CommandHandlers {
         }
 
         if (RedProtect.get().getPermissionHandler().hasRegionPermLeader(src, "removeleader", r)) {
+            if (lockedAbort(src, r)) return;
             Player pVictim = RedProtect.get().getServer().getPlayer(sVictim);
 
             if (RedProtect.get().getUtil().PlayerToUUID(sVictim) == null) {
@@ -174,6 +191,7 @@ public class CommandHandlers {
         }
 
         if (RedProtect.get().getPermissionHandler().hasRegionPermAdmin(src, "addadmin", r)) {
+            if (lockedAbort(src, r)) return;
             Player pVictim = RedProtect.get().getServer().getPlayer(sVictim);
 
             if (RedProtect.get().getUtil().PlayerToUUID(sVictim) == null) {
@@ -211,6 +229,7 @@ public class CommandHandlers {
         }
 
         if (RedProtect.get().getPermissionHandler().hasRegionPermAdmin(src, "removeadmin", r)) {
+            if (lockedAbort(src, r)) return;
             Player pVictim = RedProtect.get().getServer().getPlayer(sVictim);
 
             if (RedProtect.get().getUtil().PlayerToUUID(sVictim) == null) {
@@ -243,6 +262,7 @@ public class CommandHandlers {
         }
 
         if (RedProtect.get().getPermissionHandler().hasRegionPermAdmin(src, "addmember", r)) {
+            if (lockedAbort(src, r)) return;
             if (RedProtect.get().getUtil().PlayerToUUID(sVictim) == null) {
                 RedProtect.get().getLanguageManager().sendMessage(src, RedProtect.get().getLanguageManager().get("cmdmanager.noplayer.thisname").replace("{player}", sVictim));
                 return;
@@ -287,6 +307,7 @@ public class CommandHandlers {
         }
 
         if (RedProtect.get().getPermissionHandler().hasRegionPermAdmin(src, "removemember", r)) {
+            if (lockedAbort(src, r)) return;
 
             Player pVictim = RedProtect.get().getServer().getPlayer(sVictim);
 
@@ -317,6 +338,7 @@ public class CommandHandlers {
                 RedProtect.get().getLanguageManager().sendMessage(p, "cmdmanager.region.todo.that");
                 return;
             }
+            if (lockedAbort(p, r)) return;
 
             int claims = RedProtect.get().getConfigManager().configRoot().region_settings.can_delete_first_home_after_claims;
             if (!r.canDelete() && (claims == -1 || RedProtect.get().getRegionManager().getPlayerRegions(p.getUniqueId().toString(), p.getWorld().getName()) < claims) && !p.hasPermission("redprotect.bypass")) {
@@ -363,6 +385,7 @@ public class CommandHandlers {
                 RedProtect.get().getLanguageManager().sendMessage(p, RedProtect.get().getLanguageManager().get("cmdmanager.region.doesntexist") + ": " + rname);
                 return;
             }
+            if (lockedAbort(p, r)) return;
 
             int claims = RedProtect.get().getConfigManager().configRoot().region_settings.can_delete_first_home_after_claims;
             if (!r.canDelete() && (claims == -1 || RedProtect.get().getRegionManager().getPlayerRegions(p.getUniqueId().toString(), p.getWorld().getName()) < claims) && !p.hasPermission("redprotect.bypass")) {
@@ -414,6 +437,7 @@ public class CommandHandlers {
                 RedProtect.get().getLanguageManager().sendMessage(p, "cmdmanager.region.todo.that");
                 return;
             }
+            if (lockedAbort(p, r)) return;
 
             //filter name
             newName = RedProtect.get().getUtil().fixRegionName(p, newName);
@@ -744,6 +768,7 @@ public class CommandHandlers {
             RedProtect.get().getLanguageManager().sendMessage(p, "cmdmanager.region.todo.that");
             return;
         }
+        if (lockedAbort(p, r)) return;
 
         Object objflag = RedProtect.get().getUtil().parseObject(value);
 
