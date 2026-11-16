@@ -159,7 +159,7 @@ public class EntityListener implements Listener {
                 e.setCancelled(true);
             }
         } else if (e2 instanceof Explosive) {
-            if ((r1 != null && !r1.canFire()) || (r2 != null && !r2.canFire())) {
+            if ((r1 != null && !r1.canExplode(e2)) || (r2 != null && !r2.canExplode(e2))) {
                 e.setCancelled(true);
             }
         }
@@ -205,7 +205,9 @@ public class EntityListener implements Listener {
             Region r2 = RedProtect.get().getRegionManager().getTopRegion(e2.getLocation());
 
             if (de.getCause().equals(DamageCause.LIGHTNING) || de.getCause().equals(DamageCause.BLOCK_EXPLOSION) || de.getCause().equals(DamageCause.FIRE) || de.getCause().equals(DamageCause.WITHER) || de.getCause().equals(DamageCause.CUSTOM) || de.getCause().equals(DamageCause.ENTITY_EXPLOSION)) {
-                if (r1 != null && !r1.canFire() && !(e2 instanceof Player)) {
+                boolean explosion = de.getCause().equals(DamageCause.BLOCK_EXPLOSION) || de.getCause().equals(DamageCause.ENTITY_EXPLOSION);
+                boolean allowed = explosion ? r1 != null && r1.canExplode(de.getDamager()) : r1 != null && r1.canFire();
+                if (r1 != null && !allowed && !(e2 instanceof Player)) {
                     e.setCancelled(true);
                     return;
                 }
@@ -263,7 +265,7 @@ public class EntityListener implements Listener {
                     e.setCancelled(true);
                 }
             } else if (e2 instanceof Explosive) {
-                if ((r1 != null && !r1.canFire()) || (r2 != null && !r2.canFire())) {
+                if ((r1 != null && !r1.canExplode(e2)) || (r2 != null && !r2.canExplode(e2))) {
                     e.setCancelled(true);
                 }
             }

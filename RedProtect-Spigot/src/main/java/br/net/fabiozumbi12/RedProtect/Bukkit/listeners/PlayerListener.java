@@ -311,6 +311,10 @@ public class PlayerListener implements Listener {
                                 return;
                             }
                             if (RedProtect.get().getPermissionHandler().hasFlagPerm(p, flag) && (RedProtect.get().getConfigManager().configRoot().flags.containsKey(flag) || CoreConfigManager.ADMIN_FLAGS.contains(flag))) {
+                                if (br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookIsLocked(r)) {
+                                    RedProtect.get().getLanguageManager().sendMessage(p, "cmdmanager.region.locked");
+                                    return;
+                                }
                                 if (r.isAdmin(p) || r.isLeader(p) || RedProtect.get().getPermissionHandler().hasPerm(p, "redprotect.flag.admin." + flag)) {
                                     if (RedProtect.get().getConfigManager().configRoot().flags_configuration.change_flag_delay.enable) {
                                         if (RedProtect.get().getConfigManager().configRoot().flags_configuration.change_flag_delay.flags.contains(flag)) {

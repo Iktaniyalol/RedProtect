@@ -560,7 +560,7 @@ public class BlockListener implements Listener {
 
         Region r = RedProtect.get().getRegionManager().getTopRegion(l);
         if (r != null) {
-            if (e.getCause().toString().equals("EXPLOSION") && !r.canFire()) {
+            if (e.getCause().toString().equals("EXPLOSION") && !r.canExplode(null)) {
                 e.setCancelled(true);
             } else if (e.getCause().toString().equals("PHYSICS")) {
                 e.setCancelled(true);
@@ -592,6 +592,9 @@ public class BlockListener implements Listener {
 
             if (bignit != null && (bignit.getType().equals(Material.FIRE) || bignit.getType().name().contains("LAVA"))) {
                 e.setCancelled(true);
+                return;
+            }
+            if (e.getCause().equals(IgniteCause.EXPLOSION) && r.canExplode(e.getIgnitingEntity())) {
                 return;
             }
             if (e.getCause().equals(IgniteCause.LIGHTNING) || e.getCause().equals(IgniteCause.EXPLOSION) || e.getCause().equals(IgniteCause.FIREBALL)) {

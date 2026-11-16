@@ -995,6 +995,8 @@ public class Region extends CoreRegion {
     }
 
     public boolean canPressPlate(Player p) {
+        Boolean h = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanInteract(p, this);
+        if (h != null) return h;
         return getFlagBool("press-plate") || checkAllowedPlayer(p, "press-plate");
     }
 
@@ -1083,26 +1085,38 @@ public class Region extends CoreRegion {
     }
 
     public boolean canEnderChest(Player p) {
+        Boolean h = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanInteract(p, this);
+        if (h != null) return h;
         return getFlagBool("ender-chest") || checkAllowedPlayer(p, "ender-chest");
     }
 
     public boolean canChest(Player p) {
+        Boolean h = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanInteract(p, this);
+        if (h != null) return h;
         return getFlagBool("chest") || checkAllowedPlayer(p, "chest");
     }
 
     public boolean canLever(Player p) {
+        Boolean h = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanInteract(p, this);
+        if (h != null) return h;
         return getFlagBool("lever") || checkAllowedPlayer(p, "lever");
     }
 
     public boolean canRedstone(Player p) {
+        Boolean h = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanInteract(p, this);
+        if (h != null) return h;
         return getFlagBool("redstone") || checkAllowedPlayer(p, "redstone");
     }
 
     public boolean canButton(Player p) {
+        Boolean h = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanInteract(p, this);
+        if (h != null) return h;
         return getFlagBool("button") || checkAllowedPlayer(p, "button");
     }
 
     public boolean canDoor(Player p) {
+        Boolean h = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanInteract(p, this);
+        if (h != null) return h;
         return getFlagBool("door") || checkAllowedPlayer(p, "door");
     }
 
@@ -1161,11 +1175,29 @@ public class Region extends CoreRegion {
     }
 
     public boolean canInteractPassives(Player p) {
+        Boolean h = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanInteract(p, this);
+        if (h != null) return h;
         return getFlagBool("passives") || checkAllowedPlayer(p, "passives");
     }
 
     public boolean canFlow() {
         return getFlagBool("flow");
+    }
+
+    /**
+     * Explosion check (block damage / entity damage by explosives) for this region.
+     * External {@link br.net.fabiozumbi12.RedProtect.Bukkit.API.ProtectionHook}s are consulted first,
+     * then falls back to the "fire" flag, as RedProtect always did.
+     *
+     * @param source exploding entity, may be {@code null} for block explosions.
+     * @return true if the explosion may damage this region.
+     */
+    public boolean canExplode(Entity source) {
+        Boolean hook = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookAllowExplosion(source, this);
+        if (hook != null) {
+            return hook;
+        }
+        return canFire();
     }
 
     public boolean canFire() {

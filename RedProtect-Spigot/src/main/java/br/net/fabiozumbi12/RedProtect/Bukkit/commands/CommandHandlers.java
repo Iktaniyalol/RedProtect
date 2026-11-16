@@ -54,8 +54,7 @@ public class CommandHandlers {
      * @return {@code true} if the command must be aborted.
      */
     private static boolean lockedAbort(CommandSender src, Region r) {
-        if (r != null && br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookIsLocked(r)
-                && !src.hasPermission("redprotect.admin")) {
+        if (r != null && br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookIsLocked(r)) {
             RedProtect.get().getLanguageManager().sendMessage(src, "cmdmanager.region.locked");
             return true;
         }
@@ -463,6 +462,7 @@ public class CommandHandlers {
     // TODO Other Handlers
     public static void handlePrioritySingle(Player p, int prior, String region) {
         Region r = RedProtect.get().getRegionManager().getRegion(region, p.getWorld().getName());
+        if (lockedAbort(p, r)) return;
         if (RedProtect.get().getPermissionHandler().hasRegionPermLeader(p, "priority", r)) {
             if (r != null) {
                 r.setPrior(prior);
@@ -476,6 +476,7 @@ public class CommandHandlers {
 
     public static void handlePriority(Player p, int prior) {
         Region r = RedProtect.get().getRegionManager().getTopRegion(p.getLocation());
+        if (lockedAbort(p, r)) return;
         if (RedProtect.get().getPermissionHandler().hasRegionPermLeader(p, "priority", r)) {
             if (r != null) {
                 r.setPrior(prior);
@@ -627,6 +628,7 @@ public class CommandHandlers {
 
     public static void handleWelcome(Player p, String wMessage) {
         Region r = RedProtect.get().getRegionManager().getTopRegion(p.getLocation());
+        if (lockedAbort(p, r)) return;
         if (RedProtect.get().getPermissionHandler().hasRegionPermAdmin(p, "welcome", r)) {
             if (r != null) {
                 switch (wMessage) {

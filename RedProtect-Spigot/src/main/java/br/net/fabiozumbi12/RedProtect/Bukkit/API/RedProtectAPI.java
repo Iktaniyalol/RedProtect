@@ -108,6 +108,19 @@ public class RedProtectAPI {
     }
 
     /**
+     * Aggregate {@code canInteract} across hooks. First non-null answer wins.
+     *
+     * @return {@code TRUE}/{@code FALSE} override or {@code null} for default.
+     */
+    public static Boolean hookCanInteract(Player p, Region r) {
+        for (ProtectionHook h : PROTECTION_HOOKS) {
+            Boolean res = h.canInteract(p, r);
+            if (res != null) return res;
+        }
+        return null;
+    }
+
+    /**
      * Whether any hook reports this region as locked from player commands.
      */
     public static boolean hookIsLocked(Region r) {

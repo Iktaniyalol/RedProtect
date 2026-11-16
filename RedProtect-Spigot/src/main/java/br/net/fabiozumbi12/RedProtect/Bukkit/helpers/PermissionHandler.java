@@ -91,11 +91,27 @@ public class PermissionHandler {
         return getClaimLimit(p);
     }
 
+    /**
+     * Regions locked by an external {@link br.net.fabiozumbi12.RedProtect.Bukkit.API.ProtectionHook}
+     * (e.g. Clans bases) are managed only by the owning plugin: every region-scoped
+     * command permission (delete, redefine, flag, members, settp, value...) is denied for players.
+     */
+    private boolean lockedForPlayer(Player p, Region poly) {
+        if (poly != null && br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookIsLocked(poly)) {
+            RedProtect.get().getLanguageManager().sendMessage(p, "cmdmanager.region.locked");
+            return true;
+        }
+        return false;
+    }
+
     private boolean regionPermLeader(Player p, String s, Region poly) {
         String adminperm = "redprotect.command.admin." + s;
         String userperm = "redprotect.command." + s;
         if (poly == null) {
             return this.hasPerm(p, adminperm) || this.hasPerm(p, userperm);
+        }
+        if (lockedForPlayer(p, poly)) {
+            return false;
         }
         if (denyWorldPermission(p, userperm, poly.getWorld()) && denyWorldPermission(p, adminperm, poly.getWorld())){
             return false;
@@ -108,6 +124,9 @@ public class PermissionHandler {
         String userperm = "redprotect.command." + s;
         if (poly == null) {
             return this.hasPerm(p, adminperm) || this.hasPerm(p, userperm);
+        }
+        if (!s.equals("info") && !s.equals("teleport") && lockedForPlayer(p, poly)) {
+            return false;
         }
         if (denyWorldPermission(p, userperm, poly.getWorld()) && denyWorldPermission(p, adminperm, poly.getWorld())){
             return false;
