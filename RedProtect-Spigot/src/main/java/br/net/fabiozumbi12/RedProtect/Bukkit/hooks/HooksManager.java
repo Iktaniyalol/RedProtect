@@ -250,8 +250,7 @@ public class HooksManager {
 
     //check if plugin PvPManager is installed
     public boolean checkPvPm() {
-        Plugin pPvp = Bukkit.getPluginManager().getPlugin("PvPManager");
-        return pPvp != null && pPvp.isEnabled();
+        return false;
     }
 
     public boolean checkSC() {
