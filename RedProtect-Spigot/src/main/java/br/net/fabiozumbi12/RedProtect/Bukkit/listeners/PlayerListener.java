@@ -77,6 +77,7 @@ public class PlayerListener implements Listener {
     private static final ContainerManager cont = new ContainerManager();
     private final HashMap<String, String> Ownerslist = new HashMap<>();
     private final HashMap<String, String> PlayerCmd = new HashMap<>();
+    private final HashMap<String, Long> PlayerCmdTime = new HashMap<>();
     private final HashMap<String, Boolean> PvPState = new HashMap<>();
     private final HashMap<String, String> PlayertaskID = new HashMap<>();
     private final HashMap<String, HashMap<Integer, Location>> deathLocs = new HashMap<>();
@@ -637,6 +638,15 @@ public class PlayerListener implements Listener {
         final Region rfrom = RedProtect.get().getRegionManager().getTopRegion(lfrom);
         final Region rto = RedProtect.get().getRegionManager().getTopRegion(lto);
 
+        final String pc = PlayerCmd.remove(p.getName());
+        final Long pcTime = PlayerCmdTime.remove(p.getName());
+        if (pc != null && pcTime != null && System.currentTimeMillis() - pcTime <= 3000L && rto != null) {
+            if (!rto.canBack(p) && pc.toLowerCase().contains("back")) {
+                RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantback");
+                e.setCancelled(true);
+            }
+        }
+
         RedProtect.get().logger.debug(LogLevel.PLAYER, "PlayerListener - PlayerTeleportEvent from " + lfrom + " to " + lto);
 
         if (rfrom != null) {
@@ -691,18 +701,6 @@ public class PlayerListener implements Listener {
                     RedProtect.get().getLanguageManager().sendMessage(p, RedProtect.get().getLanguageManager().get("playerlistener.region.maxplayers").replace("{players}", String.valueOf(rto.getMaxPlayers())));
                     e.setCancelled(true);
                 }
-            }
-
-            if (PlayerCmd.containsKey(p.getName())) {
-                if (!rto.canBack(p) && PlayerCmd.get(p.getName()).toLowerCase().contains("back")) {
-                    RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantback");
-                    e.setCancelled(true);
-                }
-                if (!rto.isHomeAllowed(p) && PlayerCmd.get(p.getName()).toLowerCase().contains("home")) {
-                    RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.canthome");
-                    e.setCancelled(true);
-                }
-                PlayerCmd.remove(p.getName());
             }
         }
 
@@ -802,8 +800,9 @@ public class PlayerListener implements Listener {
             }
         }
 
-        if (cmds.startsWith("back") || cmds.startsWith("home") || cmds.contains(":back") || cmds.contains(":home")) {
+        if (cmds.startsWith("back") || cmds.contains(":back")) {
             PlayerCmd.put(p.getName(), msg);
+            PlayerCmdTime.put(p.getName(), System.currentTimeMillis());
         }
 
         if (r != null) {

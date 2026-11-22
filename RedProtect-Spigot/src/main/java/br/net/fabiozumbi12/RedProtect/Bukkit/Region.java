@@ -1224,7 +1224,7 @@ public class Region extends CoreRegion {
         this.value = value;
     }
 
-    private boolean checkAllowedPlayer(Player p, String flag) {
+    public boolean checkAllowedPlayer(Player p, String flag) {
         return this.isLeader(p) || this.isAdmin(p) || this.isMember(p) || p.hasPermission("redprotect.flag.bypass." + flag);
     }
 
