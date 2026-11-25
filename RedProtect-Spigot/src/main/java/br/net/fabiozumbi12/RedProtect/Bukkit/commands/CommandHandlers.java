@@ -28,6 +28,7 @@ package br.net.fabiozumbi12.RedProtect.Bukkit.commands;
 
 import br.net.fabiozumbi12.RedProtect.Bukkit.API.events.RenameRegionEvent;
 import br.net.fabiozumbi12.RedProtect.Bukkit.RedProtect;
+import br.net.fabiozumbi12.RedProtect.Bukkit.jes.JesHook;
 import br.net.fabiozumbi12.RedProtect.Bukkit.Region;
 import br.net.fabiozumbi12.RedProtect.Bukkit.API.events.DeleteRegionEvent;
 import br.net.fabiozumbi12.RedProtect.Bukkit.guis.ItemFlagGui;
@@ -423,6 +424,8 @@ public class CommandHandlers {
             }
 
             if (reco > 0) {
+                JesHook.intent(player.getUniqueId(), reco, true, "ADJUSTMENT", "claim", "region-delete-refund",
+                        "{\"area\":" + region.getArea() + ",\"costPerBlock\":" + RedProtect.get().getConfigManager().ecoRoot().claim_cost_per_block.cost_per_block + "}");
                 RedProtect.get().economy.depositPlayer(player, reco);
                 player.sendMessage(RedProtect.get().getLanguageManager().get("economy.region.deleted").replace("{price}", RedProtect.get().getConfigManager().ecoRoot().economy_symbol + reco + " " + RedProtect.get().getConfigManager().ecoRoot().economy_name));
             }

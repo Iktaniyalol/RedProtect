@@ -30,6 +30,7 @@ import br.net.fabiozumbi12.RedProtect.Bukkit.RedProtect;
 import br.net.fabiozumbi12.RedProtect.Bukkit.Region;
 import br.net.fabiozumbi12.RedProtect.Bukkit.API.events.RedefineRegionEvent;
 import br.net.fabiozumbi12.RedProtect.Bukkit.hooks.WEHook;
+import br.net.fabiozumbi12.RedProtect.Bukkit.jes.JesHook;
 import br.net.fabiozumbi12.RedProtect.Bukkit.region.RegionBuilder;
 import br.net.fabiozumbi12.RedProtect.Core.helpers.LogLevel;
 import br.net.fabiozumbi12.RedProtect.Core.helpers.Replacer;
@@ -177,10 +178,16 @@ public class RedefineRegionBuilder extends RegionBuilder {
             }
 
             if (peco >= reco) {
-                if (reco > 0)
+                String meta = "{\"newArea\":" + newRegion.getArea() + ",\"oldArea\":" + old.getArea()
+                        + ",\"costPerBlock\":" + RedProtect.get().getConfigManager().ecoRoot().claim_cost_per_block.cost_per_block + "}";
+                if (reco > 0) {
+                    JesHook.intent(p.getUniqueId(), Math.abs(reco), false, "SINK", "claim", "region-expand", meta);
                     RedProtect.get().economy.withdrawPlayer(p, Math.abs(reco));
-                if (reco < 0)
+                }
+                if (reco < 0) {
+                    JesHook.intent(p.getUniqueId(), Math.abs(reco), true, "ADJUSTMENT", "claim", "region-shrink-refund", meta);
                     RedProtect.get().economy.depositPlayer(p, Math.abs(reco));
+                }
                 p.sendMessage(RedProtect.get().getLanguageManager().get("economy.region.claimed").replace("{price}", RedProtect.get().getConfigManager().ecoRoot().economy_symbol + reco + " " + RedProtect.get().getConfigManager().ecoRoot().economy_name));
             } else {
                 RedProtect.get().getLanguageManager().sendMessage(p, "regionbuilder.notenought.money", new Replacer[]{new Replacer("{price}", RedProtect.get().getConfigManager().ecoRoot().economy_symbol + reco)});
