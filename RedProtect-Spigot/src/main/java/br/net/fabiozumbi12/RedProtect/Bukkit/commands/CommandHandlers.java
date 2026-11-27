@@ -31,6 +31,7 @@ import br.net.fabiozumbi12.RedProtect.Bukkit.RedProtect;
 import br.net.fabiozumbi12.RedProtect.Bukkit.jes.JesHook;
 import br.net.fabiozumbi12.RedProtect.Bukkit.Region;
 import br.net.fabiozumbi12.RedProtect.Bukkit.API.events.DeleteRegionEvent;
+import br.net.fabiozumbi12.RedProtect.Bukkit.guis.ChestFlagGui;
 import br.net.fabiozumbi12.RedProtect.Bukkit.guis.ItemFlagGui;
 import br.net.fabiozumbi12.RedProtect.Bukkit.guis.MobFlagGui;
 import br.net.fabiozumbi12.RedProtect.Core.config.CoreConfigManager;
@@ -827,6 +828,11 @@ public class CommandHandlers {
                                 RedProtect.get().getLanguageManager().sendMessage(p, RedProtect.get().getLanguageManager().get("cmdmanager.region.flag.set").replace("{flag}", "'" + flag + "'") + " " + r.getFlagBool(flag));
                                 RedProtect.get().logger.addLog("(World " + r.getWorld() + ") Player " + p.getName() + " SET FLAG " + flag + " of region " + r.getName() + " to " + r.getFlagString(flag));
                             }
+                        } else if (flag.equalsIgnoreCase("chest") || flag.equalsIgnoreCase("spawn-animals") || flag.equalsIgnoreCase("spawn-monsters")) {
+                            if (r.setFlag(p, flag, value)) {
+                                RedProtect.get().getLanguageManager().sendMessage(p, RedProtect.get().getLanguageManager().get("cmdmanager.region.flag.set").replace("{flag}", "'" + flag + "'") + " " + r.getFlagString(flag));
+                                RedProtect.get().logger.addLog("(World " + r.getWorld() + ") Player " + p.getName() + " SET FLAG " + flag + " of region " + r.getName() + " to " + r.getFlagString(flag));
+                            }
                         } else {
                             RedProtect.get().getLanguageManager().sendMessage(p, RedProtect.get().getLanguageManager().get("cmdmanager.region.flag.usage") + " <true/false>");
                         }
@@ -881,7 +887,9 @@ public class CommandHandlers {
                         if (flag.equalsIgnoreCase("deny-enter-items") ||
                                 flag.equalsIgnoreCase("allow-enter-items") ||
                                 flag.equalsIgnoreCase("allow-place") ||
-                                flag.equalsIgnoreCase("allow-break")) {
+                                flag.equalsIgnoreCase("allow-break") ||
+                                flag.equalsIgnoreCase("deny-place") ||
+                                flag.equalsIgnoreCase("deny-break")) {
 
                             ItemFlagGui itemGui = new ItemFlagGui(p, r, flag);
                             itemGui.open();
@@ -897,6 +905,15 @@ public class CommandHandlers {
 
                             MobFlagGui mobFlagGui = new MobFlagGui(p, r, flag);
                             mobFlagGui.open();
+                            return;
+                        }
+                    }
+
+                    // Chest flag
+                    if (RedProtect.get().getPermissionHandler().hasPerm(p, "redprotect.flag.chest-gui")) {
+                        if (flag.equalsIgnoreCase("chest")) {
+                            ChestFlagGui chestFlagGui = new ChestFlagGui(p, r, flag);
+                            chestFlagGui.open();
                             return;
                         }
                     }
@@ -935,7 +952,10 @@ public class CommandHandlers {
                 flag.equalsIgnoreCase("deny-cmds") ||
                 flag.equalsIgnoreCase("allow-break") ||
                 flag.equalsIgnoreCase("allow-place") ||
+                flag.equalsIgnoreCase("deny-break") ||
+                flag.equalsIgnoreCase("deny-place") ||
                 flag.equalsIgnoreCase("set-portal") ||
+                flag.equalsIgnoreCase("respawn-location") ||
                 flag.equalsIgnoreCase("particles") ||
                 flag.equalsIgnoreCase("spawn-animals") ||
                 flag.equalsIgnoreCase("spawn-monsters") ||
@@ -1119,6 +1139,36 @@ public class CommandHandlers {
             }
             Region r = RedProtect.get().getRegionManager().getRegion(valida[0], valida[1]);
             if (r == null) {
+                return false;
+            }
+        }
+
+        if (flag.equalsIgnoreCase("respawn-location")) {
+            if (!(value instanceof String)) {
+                return false;
+            }
+            String val = value.toString().trim();
+            if (val.equalsIgnoreCase("tppoint")) {
+                return true;
+            }
+            String[] coords = val.split(" ");
+            if (coords.length < 4) {
+                return false;
+            }
+            if (Bukkit.getWorld(coords[0]) == null) {
+                return false;
+            }
+            try {
+                Double.parseDouble(coords[1]);
+                Double.parseDouble(coords[2]);
+                Double.parseDouble(coords[3]);
+                if (coords.length >= 5) {
+                    Float.parseFloat(coords[4]);
+                }
+                if (coords.length >= 6) {
+                    Float.parseFloat(coords[5]);
+                }
+            } catch (NumberFormatException e) {
                 return false;
             }
         }

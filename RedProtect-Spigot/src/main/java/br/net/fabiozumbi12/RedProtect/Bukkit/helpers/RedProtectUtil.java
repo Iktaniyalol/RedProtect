@@ -77,6 +77,10 @@ public class RedProtectUtil extends CoreUtil {
         this.plugin = plugin;
     }
 
+    public static String sanitizeTableName(String tableName) {
+        return tableName == null ? null : tableName.replace("`", "");
+    }
+
     public String dateNow() {
         return dateNow(RedProtect.get().getConfigManager().configRoot().region_settings.date_format);
     }
@@ -118,16 +122,8 @@ public class RedProtectUtil extends CoreUtil {
     public boolean denyPotion(ItemStack result, World world) {
         List<String> Pots = RedProtect.get().getConfigManager().globalFlagsRoot().worlds.get(world.getName()).deny_potions;
         if (result != null && !Pots.isEmpty() && (result.getType().name().contains("POTION") || result.getType().name().contains("TIPPED"))) {
-            PotionMeta pot = (PotionMeta) result.getItemMeta();
-            String potname = "";
-            try{
-                potname = Objects.requireNonNull(pot).getBasePotionType().name();
-            } catch (Exception ex){
-                try{
-                    potname = Objects.requireNonNull(pot).getBasePotionType().name();
-                } catch (Exception ignored){}
-            }
-            return Pots.contains(potname);
+            String potname = getPotionTypeName(result);
+            return !potname.isEmpty() && Pots.contains(potname);
         }
         return false;
     }
@@ -135,21 +131,33 @@ public class RedProtectUtil extends CoreUtil {
     public boolean denyPotion(ItemStack result, Player p) {
         List<String> Pots = RedProtect.get().getConfigManager().globalFlagsRoot().worlds.get(p.getWorld().getName()).deny_potions;
         if (result != null && !Pots.isEmpty() && (result.getType().name().contains("POTION") || result.getType().name().contains("TIPPED"))) {
-            PotionMeta pot = (PotionMeta) result.getItemMeta();
-            String potname = "";
-            try{
-                potname = Objects.requireNonNull(pot).getBasePotionType().name();
-            } catch (Exception ex){
-                try{
-                    potname = Objects.requireNonNull(pot).getBasePotionType().name();
-                } catch (Exception ignored){}
-            }
-            if (Pots.contains(potname)) {
+            String potname = getPotionTypeName(result);
+            if (!potname.isEmpty() && Pots.contains(potname)) {
                 RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.denypotion");
                 return true;
             }
         }
         return false;
+    }
+
+    @SuppressWarnings("deprecation")
+    private String getPotionTypeName(ItemStack item) {
+        if (item == null || !(item.getItemMeta() instanceof PotionMeta)) {
+            return "";
+        }
+        PotionMeta pot = (PotionMeta) item.getItemMeta();
+        try {
+            if (pot.getBasePotionType() != null) {
+                return pot.getBasePotionType().name();
+            }
+        } catch (NoSuchMethodError ignored) {
+            try {
+                if (pot.getBasePotionData() != null && pot.getBasePotionData().getType() != null) {
+                    return pot.getBasePotionData().getType().name();
+                }
+            } catch (Throwable ignored2) {}
+        } catch (Throwable ignored) {}
+        return "";
     }
 
     public boolean isRealPlayer(Player p) {
@@ -515,7 +523,7 @@ public class RedProtectUtil extends CoreUtil {
             Connection dbcon = DriverManager.getConnection("jdbc:mysql://" + RedProtect.get().getConfigManager().configRoot().mysql.host + "/" + RedProtect.get().getConfigManager().configRoot().mysql.db_name + "?autoReconnect=true", RedProtect.get().getConfigManager().configRoot().mysql.user_name, RedProtect.get().getConfigManager().configRoot().mysql.user_pass);
 
             for (World world : Bukkit.getWorlds()) {
-                String tableName = RedProtect.get().getConfigManager().configRoot().mysql.table_prefix + world.getName();
+                String tableName = sanitizeTableName(RedProtect.get().getConfigManager().configRoot().mysql.table_prefix + world.getName());
                 PreparedStatement st = dbcon.prepareStatement("SELECT * FROM `" + tableName + "` WHERE world=?");
                 st.setString(1, world.getName());
                 ResultSet rs = st.executeQuery();
@@ -659,7 +667,7 @@ public class RedProtectUtil extends CoreUtil {
 
             String dbname = RedProtect.get().getConfigManager().configRoot().mysql.db_name;
             String url = "jdbc:mysql://" + RedProtect.get().getConfigManager().configRoot().mysql.host + "/";
-            String tableName = RedProtect.get().getConfigManager().configRoot().mysql.table_prefix + world.getName();
+            String tableName = sanitizeTableName(RedProtect.get().getConfigManager().configRoot().mysql.table_prefix + world.getName());
 
             Connection dbcon = DriverManager.getConnection(url + dbname, RedProtect.get().getConfigManager().configRoot().mysql.user_name, RedProtect.get().getConfigManager().configRoot().mysql.user_pass);
 
@@ -712,7 +720,7 @@ public class RedProtectUtil extends CoreUtil {
 
             String url = "jdbc:mysql://" + RedProtect.get().getConfigManager().configRoot().mysql.host + "/";
             String reconnect = "?autoReconnect=true";
-            String tableName = RedProtect.get().getConfigManager().configRoot().mysql.table_prefix + world.getName();
+            String tableName = sanitizeTableName(RedProtect.get().getConfigManager().configRoot().mysql.table_prefix + world.getName());
 
             try {
                 Class.forName("com.mysql.jdbc.Driver");

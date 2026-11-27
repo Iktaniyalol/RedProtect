@@ -57,6 +57,9 @@ import org.bukkit.event.entity.*;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.inventory.BrewEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
@@ -136,7 +139,7 @@ public class PlayerListener implements Listener {
         Player p = e.getPlayer();
 
         Region r = RedProtect.get().getRegionManager().getTopRegion(p.getLocation());
-        if (r != null && !r.usePotions(p) && p.getItemInHand().getType().name().contains("POTION")) {
+        if (r != null && !r.usePotions(p) && e.getItem() != null && e.getItem().getType().name().contains("POTION")) {
             e.setCancelled(true);
             RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantuse");
             return;
@@ -356,10 +359,12 @@ public class PlayerListener implements Listener {
                             event.setCancelled(true);
                         }
                     } else if (b.getState() instanceof InventoryHolder ||
-                            RedProtect.get().getConfigManager().configRoot().private_cat.allowed_blocks.stream().anyMatch(b.getType().name()::matches)) {
+                            RedProtect.get().getConfigManager().configRoot().private_cat.allowed_blocks.stream().anyMatch(b.getType().name()::matches) ||
+                            RedProtect.get().getConfigManager().configRoot().flags_configuration.custom_containers.stream().anyMatch(b.getType().name()::equalsIgnoreCase) ||
+                            b.getType().name().contains("CAMPFIRE")) {
                         var open = cont.canOpen(b, p, true);
                         if (!open){
-                            if ((r.canChest(p) && !cont.canOpen(b, p, false)) || (!r.canChest(p) && cont.canOpen(b, p, false)) || (!r.canChest(p) && !cont.canOpen(b, p, false))) {
+                            if ((r.canChest(p, b.getType()) && !cont.canOpen(b, p, false)) || (!r.canChest(p, b.getType()) && cont.canOpen(b, p, false)) || (!r.canChest(p, b.getType()) && !cont.canOpen(b, p, false))) {
                                 RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantopen");
                                 event.setCancelled(true);
                             }
@@ -393,7 +398,11 @@ public class PlayerListener implements Listener {
                             event.setCancelled(true);
                         }
                     } else if (itemInHand != null && itemInHand.getType().equals(Material.WATER_BUCKET)) {
-                        if (!r.canFish(p)) {
+                        if (!r.canBuild(p) && !r.canPlace(itemInHand.getType())) {
+                            RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantuse");
+                            event.setUseItemInHand(Event.Result.DENY);
+                            event.setCancelled(true);
+                        } else if (!r.canFish(p)) {
                             RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantinteract");
                             event.setUseItemInHand(Event.Result.DENY);
                             event.setCancelled(true);
@@ -438,11 +447,9 @@ public class PlayerListener implements Listener {
                         event.setCancelled(true);
                     } else if ((itemInHand != null && !itemInHand.getType().equals(Material.AIR)) && !r.canBuild(p) && !r.canPlace(itemInHand.getType()) && !r.canBreak(itemInHand.getType()) &&
                             (itemInHand.getType().equals(Material.FLINT_AND_STEEL) ||
-                                    itemInHand.getType().equals(Material.BUCKET) ||
-                                    itemInHand.getType().equals(Material.LAVA_BUCKET) ||
+                                    itemInHand.getType().name().contains("BUCKET") ||
                                     itemInHand.getType().equals(Material.ITEM_FRAME) ||
                                     itemInHand.getType().name().equals("END_CRYSTAL") ||
-                                    (!r.canFish(p) && itemInHand.getType().equals(Material.WATER_BUCKET)) ||
                                     itemInHand.getType().equals(Material.PAINTING))) {
                         RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantuse");
                         event.setCancelled(true);
@@ -490,6 +497,12 @@ public class PlayerListener implements Listener {
                 RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantedit");
                 event.setCancelled(true);
             }
+        } else if (e instanceof LeashHitch) {
+            Region r = RedProtect.get().getRegionManager().getTopRegion(l);
+            if (r != null && !r.canBuild(p) && !r.canInteractPassives(p)) {
+                RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantinteract");
+                event.setCancelled(true);
+            }
         } else if (e instanceof Minecart || e instanceof Boat) {
             Region r = RedProtect.get().getRegionManager().getTopRegion(l);
             if (r != null && !r.canMinecart(p)) {
@@ -509,6 +522,36 @@ public class PlayerListener implements Listener {
                 RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantinteract");
                 event.setCancelled(true);
             }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    public void onPlayerLeash(PlayerLeashEntityEvent e) {
+        Player p = e.getPlayer();
+        if (p == null || !RedProtect.get().getUtil().isRealPlayer(p)) {
+            return;
+        }
+
+        Location l = e.getEntity().getLocation();
+        Region r = RedProtect.get().getRegionManager().getTopRegion(l);
+        if (r != null && !r.canBuild(p) && !r.canInteractPassives(p)) {
+            RedProtect.get().getLanguageManager().sendMessage(p, "entitylistener.region.cantinteract");
+            e.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    public void onPlayerUnleash(PlayerUnleashEntityEvent e) {
+        Player p = e.getPlayer();
+        if (p == null || !RedProtect.get().getUtil().isRealPlayer(p)) {
+            return;
+        }
+
+        Location l = e.getEntity().getLocation();
+        Region r = RedProtect.get().getRegionManager().getTopRegion(l);
+        if (r != null && !r.canBuild(p) && !r.canInteractPassives(p)) {
+            RedProtect.get().getLanguageManager().sendMessage(p, "entitylistener.region.cantinteract");
+            e.setCancelled(true);
         }
     }
 
@@ -606,6 +649,9 @@ public class PlayerListener implements Listener {
         }
 
         if (e.getEntity() instanceof Player && !p.equals(e.getEntity()) && r.flagExists("pvp") && !r.canPVP((Player) e.getEntity(), p)) {
+            if (e.getDamager() instanceof FishHook && r.canPushAndPull(p)) {
+                return;
+            }
             RedProtect.get().getLanguageManager().sendMessage(p, "entitylistener.region.cantpvp");
             e.setCancelled(true);
         }
@@ -886,6 +932,17 @@ public class PlayerListener implements Listener {
         Player p = e.getPlayer();
         if (!RedProtect.get().getUtil().isRealPlayer(p)) {
             return;
+        }
+
+        if (deathLocs.containsKey(p.getName()) && deathLocs.get(p.getName()).containsKey(0)) {
+            Location deathLoc = deathLocs.get(p.getName()).get(0);
+            Region r = RedProtect.get().getRegionManager().getTopRegion(deathLoc);
+            if (r != null && r.flagExists("respawn-location")) {
+                Location respawnLoc = r.getRespawnLocation();
+                if (respawnLoc != null) {
+                    e.setRespawnLocation(respawnLoc);
+                }
+            }
         }
 
         //check for death listener
@@ -1286,7 +1343,37 @@ public class PlayerListener implements Listener {
 
         if (r != null && ((!r.canExit(p) && !r.canDrop(p)) || !r.canDrop(p))) {
             e.setCancelled(true);
+            p.updateInventory();
             RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantdrop");
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onInventoryDropClick(InventoryClickEvent e) {
+        if (!(e.getWhoClicked() instanceof Player p)) return;
+
+        // Slot -999 or OUTSIDE: player clicking outside inventory with cursor item to drop it
+        if (e.getSlotType() == InventoryType.SlotType.OUTSIDE || e.getRawSlot() == -999) {
+            Region r = RedProtect.get().getRegionManager().getTopRegion(p.getLocation());
+            if (r != null && !r.canDrop(p)) {
+                e.setCancelled(true);
+                p.updateInventory();
+                RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantdrop");
+            }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onInventoryDropDrag(InventoryDragEvent e) {
+        if (!(e.getWhoClicked() instanceof Player p)) return;
+
+        if (e.getRawSlots().contains(-999)) {
+            Region r = RedProtect.get().getRegionManager().getTopRegion(p.getLocation());
+            if (r != null && !r.canDrop(p)) {
+                e.setCancelled(true);
+                p.updateInventory();
+                RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantdrop");
+            }
         }
     }
 
@@ -1782,11 +1869,29 @@ public class PlayerListener implements Listener {
             return;
         }
         Player p = e.getPlayer();
-        Location l = e.getBlockClicked().getLocation();
-        Region r = RedProtect.get().getRegionManager().getTopRegion(l);
+        Block bClicked = e.getBlockClicked();
+        Block bPlaced = e.getBlock();
+        Region rClicked = bClicked != null ? RedProtect.get().getRegionManager().getTopRegion(bClicked.getLocation()) : null;
+        Region rPlaced = bPlaced != null ? RedProtect.get().getRegionManager().getTopRegion(bPlaced.getLocation()) : null;
+        Material bucket = e.getBucket();
 
-        if (r != null && !r.canBuild(p) && (p.getItemInHand().getType().name().contains("BUCKET"))) {
+        if (!RedProtect.get().getPermissionHandler().hasPerm(p, "redprotect.bypass")) {
+            if ((rPlaced != null && rPlaced.denyPlace(bucket)) || (rClicked != null && rClicked.denyPlace(bucket))) {
+                e.setCancelled(true);
+                RedProtect.get().getLanguageManager().sendMessage(p, "blocklistener.region.cantbuild");
+                return;
+            }
+        }
+
+        if (rPlaced != null && !rPlaced.canBuild(p) && !rPlaced.canPlace(bucket)) {
             e.setCancelled(true);
+            RedProtect.get().getLanguageManager().sendMessage(p, "blocklistener.region.cantbuild");
+            return;
+        }
+
+        if (rClicked != null && !rClicked.canBuild(p) && !rClicked.canPlace(bucket)) {
+            e.setCancelled(true);
+            RedProtect.get().getLanguageManager().sendMessage(p, "blocklistener.region.cantbuild");
         }
     }
 
@@ -1796,11 +1901,28 @@ public class PlayerListener implements Listener {
             return;
         }
         Player p = e.getPlayer();
-        Location l = e.getBlockClicked().getLocation();
-        Region r = RedProtect.get().getRegionManager().getTopRegion(l);
+        Block bClicked = e.getBlockClicked();
+        Block bFilled = e.getBlock();
+        Region rClicked = bClicked != null ? RedProtect.get().getRegionManager().getTopRegion(bClicked.getLocation()) : null;
+        Region rFilled = bFilled != null ? RedProtect.get().getRegionManager().getTopRegion(bFilled.getLocation()) : null;
 
-        if (r != null && !r.canBuild(p) && (p.getItemInHand().getType().name().contains("BUCKET"))) {
+        if (!RedProtect.get().getPermissionHandler().hasPerm(p, "redprotect.bypass")) {
+            if ((rClicked != null && rClicked.denyBreak(bClicked.getType())) || (rFilled != null && rFilled.denyBreak(bFilled.getType()))) {
+                e.setCancelled(true);
+                RedProtect.get().getLanguageManager().sendMessage(p, "blocklistener.region.cantbuild");
+                return;
+            }
+        }
+
+        if (rClicked != null && !rClicked.canBuild(p) && !rClicked.canBreak(bClicked.getType())) {
             e.setCancelled(true);
+            RedProtect.get().getLanguageManager().sendMessage(p, "blocklistener.region.cantbuild");
+            return;
+        }
+
+        if (rFilled != null && !rFilled.canBuild(p) && !rFilled.canBreak(bFilled.getType())) {
+            e.setCancelled(true);
+            RedProtect.get().getLanguageManager().sendMessage(p, "blocklistener.region.cantbuild");
         }
     }
 
@@ -1813,6 +1935,25 @@ public class PlayerListener implements Listener {
         Region r = RedProtect.get().getRegionManager().getTopRegion(p.getLocation());
         if (r != null && !r.canHunger()) {
             e.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlayerFish(PlayerFishEvent e) {
+        if (e.getState() == PlayerFishEvent.State.CAUGHT_ENTITY) {
+            Entity caught = e.getCaught();
+            if (caught != null) {
+                Player fisher = e.getPlayer();
+                Region rVictim = RedProtect.get().getRegionManager().getTopRegion(caught.getLocation());
+                Region rFisher = RedProtect.get().getRegionManager().getTopRegion(fisher.getLocation());
+
+                if ((rVictim != null && !rVictim.canPushAndPull(fisher)) || (rFisher != null && !rFisher.canPushAndPull(fisher))) {
+                    if (e.getHook() != null) {
+                        e.getHook().remove();
+                    }
+                    e.setCancelled(true);
+                }
+            }
         }
     }
 

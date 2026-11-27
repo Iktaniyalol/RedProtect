@@ -62,6 +62,8 @@ public class CoreConfigManager {
             "can-projectiles",
             "allow-place",
             "allow-break",
+            "deny-place",
+            "deny-break",
             "can-pet",
             "allow-cmds",
             "deny-cmds",
@@ -88,6 +90,7 @@ public class CoreConfigManager {
             "can-back",
             "for-sale",
             "set-portal",
+            "respawn-location",
             "exit",
             "particles",
             "show-map",
@@ -95,7 +98,8 @@ public class CoreConfigManager {
             "spawn-animals",
             "spawn-monsters",
             "can-move",
-            "can-collide"));
+            "can-collide",
+            "push-and-pull"));
     public final HashMap<String, String> backupGuiName = new HashMap<>();
     public final HashMap<String, String> backupGuiDescription = new HashMap<>();
     protected final String headerCfg = """

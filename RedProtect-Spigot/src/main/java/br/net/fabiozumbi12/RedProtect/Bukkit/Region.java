@@ -844,6 +844,32 @@ public class Region extends CoreRegion {
         return false;
     }
 
+    public boolean denyPlace(Material b) {
+        if (!flagExists("deny-place")) {
+            return false;
+        }
+        String[] blocks = getFlagString("deny-place").replace(" ", "").split(",");
+        for (String block : blocks) {
+            if (block.toUpperCase().equals(b.name())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean denyBreak(Material b) {
+        if (!flagExists("deny-break")) {
+            return false;
+        }
+        String[] blocks = getFlagString("deny-break").replace(" ", "").split(",");
+        for (String block : blocks) {
+            if (block.toUpperCase().equals(b.name())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean canTree() {
         return flagExists("treefarm") && getFlagBool("treefarm");
     }
@@ -868,6 +894,35 @@ public class Region extends CoreRegion {
 
     public boolean canBack(Player p) {
         return !flagExists("can-back") || getFlagBool("can-back") || checkAllowedPlayer(p, "can-back");
+    }
+
+    public Location getRespawnLocation() {
+        if (!flagExists("respawn-location")) {
+            return null;
+        }
+        String val = getFlagString("respawn-location").trim();
+        if (val.isEmpty()) {
+            return null;
+        }
+        if (val.equalsIgnoreCase("tppoint")) {
+            return getTPPoint();
+        }
+        String[] split = val.split(" ");
+        if (split.length >= 4) {
+            World w = Bukkit.getWorld(split[0]);
+            if (w != null) {
+                try {
+                    double x = Double.parseDouble(split[1]);
+                    double y = Double.parseDouble(split[2]);
+                    double z = Double.parseDouble(split[3]);
+                    float yaw = split.length >= 5 ? Float.parseFloat(split[4]) : 0f;
+                    float pitch = split.length >= 6 ? Float.parseFloat(split[5]) : 0f;
+                    return new Location(w, x, y, z, yaw, pitch);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+        return null;
     }
 
     public boolean isPvPArena() {
@@ -1096,6 +1151,46 @@ public class Region extends CoreRegion {
         return getFlagBool("chest") || checkAllowedPlayer(p, "chest");
     }
 
+    public boolean canChest(Player p, Material type) {
+        if (checkAllowedPlayer(p, "chest")) {
+            return true;
+        }
+        if (!flagExists("chest")) {
+            return getFlagBool("chest");
+        }
+        String flagVal = getFlagString("chest").trim();
+        if (flagVal.equalsIgnoreCase("true")) {
+            return true;
+        }
+        if (flagVal.equalsIgnoreCase("false")) {
+            return false;
+        }
+        if (type == null) {
+            return false;
+        }
+        String typeName = type.name();
+        String[] blocks = flagVal.split(",");
+        for (String b : blocks) {
+            String blockName = b.trim();
+            if (blockName.equalsIgnoreCase(typeName)) {
+                return true;
+            }
+            if (blockName.equalsIgnoreCase("SHULKER_BOX") && typeName.endsWith("SHULKER_BOX")) {
+                return true;
+            }
+            if (blockName.equalsIgnoreCase("ANVIL") && (typeName.equals("CHIPPED_ANVIL") || typeName.equals("DAMAGED_ANVIL"))) {
+                return true;
+            }
+            if (blockName.equalsIgnoreCase("CAMPFIRE") && typeName.equals("SOUL_CAMPFIRE")) {
+                return true;
+            }
+            if (blockName.equalsIgnoreCase("CAULDRON") && typeName.contains("CAULDRON")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean canLever(Player p) {
         Boolean h = br.net.fabiozumbi12.RedProtect.Bukkit.API.RedProtectAPI.hookCanInteract(p, this);
         if (h != null) return h;
@@ -1215,6 +1310,17 @@ public class Region extends CoreRegion {
     public boolean canCollide() {
         if (!flagExists("can-collide")) return true;
         return getFlagBool("can-collide");
+    }
+
+    public boolean canPushAndPull() {
+        if (!flagExists("push-and-pull")) return true;
+        return getFlagBool("push-and-pull");
+    }
+
+    public boolean canPushAndPull(Player p) {
+        if (p == null) return canPushAndPull();
+        if (!flagExists("push-and-pull")) return true;
+        return getFlagBool("push-and-pull") || checkAllowedPlayer(p, "push-and-pull");
     }
     //--------------------------------------------------------------//
 

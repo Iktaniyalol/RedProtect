@@ -54,7 +54,6 @@ import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class BlockListener implements Listener {
@@ -74,7 +73,8 @@ public class BlockListener implements Listener {
                         type.name().contains("ICE") ||
                         type.name().contains("FIRE") ||
                         type.name().contains("CORAL") ||
-                        type.name().contains("POWDER")
+                        type.name().contains("POWDER") ||
+                        type.name().contains("FARMLAND")
         )) {
             e.setCancelled(true);
         }
@@ -99,6 +99,12 @@ public class BlockListener implements Listener {
 
         Region signr = RedProtect.get().getRegionManager().getTopRegion(b.getLocation());
         if (signr != null && !signr.canSign(p)) {
+            RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantinteract");
+            e.setCancelled(true);
+            return;
+        }
+
+        if (b.getState() instanceof Sign existingSign && !cont.canEditSign(existingSign, p)) {
             RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantinteract");
             e.setCancelled(true);
             return;
@@ -134,17 +140,10 @@ public class BlockListener implements Listener {
             if (cont.validatePrivateSign(e.getLines())) {
                 if (out || signr != null) {
                     if (cont.isContainer(b)) {
-                        // Check sides for other private signs
-                        for (BlockFace face : Arrays.stream(BlockFace.values()).filter(f -> f != BlockFace.DOWN && f != BlockFace.UP).toList()) {
-                            Block faceBlock = e.getBlock().getRelative(face);
-                            if ((faceBlock.getState() instanceof Sign) && cont.validatePrivateSign(((Sign) faceBlock.getState()).getSide(Side.FRONT).getLines())) {
-                                var sign = ((Sign) faceBlock.getState()).getSide(Side.FRONT);
-                                if (!cont.validatePrivateSign(sign.getLines())){
-                                    e.setLine(0, "Other Sign");
-                                    e.setLine(1, "NEAR");
-                                }
-                                return;
-                            }
+                        if (!cont.canAddLock(b, p)) {
+                            RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantinteract");
+                            b.breakNaturally();
+                            return;
                         }
 
                         int length = p.getName().length();
@@ -166,17 +165,10 @@ public class BlockListener implements Listener {
             } else if (cont.validatePublicSign(e.getLines())){
                 if (out || signr != null) {
                     if (cont.isContainer(b)) {
-                        // Check sides for other public signs
-                        for (BlockFace face : Arrays.stream(BlockFace.values()).filter(f -> f != BlockFace.DOWN && f != BlockFace.UP).toList()) {
-                            Block faceBlock = e.getBlock().getRelative(face);
-                            if ((faceBlock.getState() instanceof Sign) && cont.validatePublicSign(((Sign) faceBlock.getState()).getSide(Side.FRONT).getLines())) {
-                                var sign = ((Sign) faceBlock.getState()).getSide(Side.FRONT);
-                                if (!cont.validatePublicSign(sign.getLines())){
-                                    e.setLine(0, "Other Sign");
-                                    e.setLine(1, "NEAR");
-                                }
-                                return;
-                            }
+                        if (!cont.canAddLock(b, p)) {
+                            RedProtect.get().getLanguageManager().sendMessage(p, "playerlistener.region.cantinteract");
+                            b.breakNaturally();
+                            return;
                         }
 
                         int length = p.getName().length();
@@ -279,6 +271,13 @@ public class BlockListener implements Listener {
         boolean antih = RedProtect.get().getConfigManager().configRoot().region_settings.anti_hopper;
         Region r = RedProtect.get().getRegionManager().getTopRegion(b.getLocation());
 
+        // A chest joining another player's locked chest would share its inventory.
+        if (b.getBlockData() instanceof org.bukkit.block.data.type.Chest && !cont.canOpen(b, p, false)) {
+            RedProtect.get().getLanguageManager().sendMessage(p, "blocklistener.region.cantplace");
+            e.setCancelled(true);
+            return;
+        }
+
         if (!RedProtect.get().getPermissionHandler().hasPerm(p, "redprotect.bypass") && antih &&
                 (m.equals(Material.HOPPER) || m.name().contains("RAIL"))) {
             int x = b.getX();
@@ -322,6 +321,12 @@ public class BlockListener implements Listener {
                             type.name().contains("CORAL") ||
                             type.name().contains("POWDER"))) {
                 b.setType(m);
+            }
+
+            if (!RedProtect.get().getPermissionHandler().hasPerm(p, "redprotect.bypass") && r.denyPlace(b.getType())) {
+                RedProtect.get().getLanguageManager().sendMessage(p, "blocklistener.region.cantbuild");
+                e.setCancelled(true);
+                return;
             }
 
             if (!r.canBuild(p) && !r.canPlace(b.getType())) {
@@ -395,6 +400,12 @@ public class BlockListener implements Listener {
             }
         }
 
+        if (r != null && !RedProtect.get().getPermissionHandler().hasPerm(p, "redprotect.bypass") && r.denyBreak(b.getType())) {
+            RedProtect.get().getLanguageManager().sendMessage(p, "blocklistener.region.cantbuild");
+            e.setCancelled(true);
+            return;
+        }
+
         if (r != null && !r.canBuild(p) && !r.canTree(b) && !r.canMining(b) && !r.canCrops(b, true) && !r.canBreak(b.getType())) {
             RedProtect.get().getLanguageManager().sendMessage(p, "blocklistener.region.cantbuild");
             e.setCancelled(true);
@@ -445,15 +456,9 @@ public class BlockListener implements Listener {
         if (r != null && clickBlock != null && cont.isSign(clickBlock) && clickBlock.getState() instanceof Sign sign
         && !RedProtect.get().getPermissionHandler().hasPermOrBypass(p, "redprotect.bypass.private")){
             if (cont.validatePrivateSign(sign.getSide(Side.FRONT).getLines()) || cont.validatePublicSign(sign.getSide(Side.FRONT).getLines())){
-                Block chest = null;
-                for (BlockFace face : Arrays.stream(BlockFace.values()).filter(f -> f != BlockFace.DOWN && f != BlockFace.UP).toList()){
-                    if (clickBlock.getRelative(face).getState() instanceof Chest){
-                        chest = clickBlock.getRelative(face);
-                        break;
-                    }
-                }
-                if (chest != null){
-                    if (cont.canOpen(chest, p, true) || (r.canChest(p) && !cont.canOpen(chest, p, false)) || (!r.canChest(p) && cont.canOpen(chest, p, false)) || (!r.canChest(p) && !cont.canOpen(chest, p, false))){
+                Block chest = RedProtect.get().getVersionHelper().getBlockRelative(clickBlock);
+                if (chest != null && chest.getState() instanceof Chest){
+                    if (cont.canOpen(chest, p, true) || (r.canChest(p, chest.getType()) && !cont.canOpen(chest, p, false)) || (!r.canChest(p, chest.getType()) && cont.canOpen(chest, p, false)) || (!r.canChest(p, chest.getType()) && !cont.canOpen(chest, p, false))){
                         e.setCancelled(true);
                         RedProtect.get().getLanguageManager().sendMessage(e.getPlayer(), "playerlistener.region.cantinteract");
                     }
